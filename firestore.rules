@@ -1,0 +1,102 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --------------------------------------------------
+    // Core Authentication & Security Helpers
+    // --------------------------------------------------
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --------------------------------------------------
+    // Validation Helpers (Pillar 2 & 5)
+    // --------------------------------------------------
+    function isValidUserProfile(data, userId) {
+      return data.keys().hasAll(['id', 'name', 'email', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'name', 'email', 'age', 'school', 'department', 'preferredCountry', 'preferredCity', 'savedCareers', 'savedUniversities', 'createdAt', 'updatedAt']) &&
+        data.id == userId &&
+        data.name is string && data.name.size() > 0 && data.name.size() <= 150 &&
+        data.email is string && data.email.size() > 0 && data.email.size() <= 254 &&
+        (!('age' in data) || (data.age is number && data.age >= 5 && data.age <= 120)) &&
+        (!('school' in data) || (data.school is string && data.school.size() <= 200)) &&
+        (!('department' in data) || (data.department is string && data.department.size() <= 150)) &&
+        (!('preferredCountry' in data) || (data.preferredCountry is string && data.preferredCountry.size() <= 100)) &&
+        (!('preferredCity' in data) || (data.preferredCity is string && data.preferredCity.size() <= 100)) &&
+        (!('savedCareers' in data) || (data.savedCareers is list && data.savedCareers.size() <= 100)) &&
+        (!('savedUniversities' in data) || (data.savedUniversities is list && data.savedUniversities.size() <= 100)) &&
+        data.createdAt is string;
+    }
+
+    function isValidAssessment(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'pathCode', 'createdAt']) &&
+        data.keys().hasOnly(['id', 'userId', 'userName', 'pathCode', 'primaryArchetype', 'scores', 'rankedCategories', 'answers', 'preferredCountry', 'preferredCity', 'createdAt']) &&
+        data.userId == userId &&
+        data.id is string && data.id.size() <= 128 &&
+        data.pathCode is string && data.pathCode.size() <= 10 &&
+        data.createdAt is string &&
+        (!('rankedCategories' in data) || (data.rankedCategories is list && data.rankedCategories.size() <= 10)) &&
+        (!('scores' in data) || data.scores is map) &&
+        (!('answers' in data) || data.answers is map);
+    }
+
+    function isValidDirectDecode(data, userId) {
+      return data.keys().hasAll(['id', 'userId', 'computedPathCode', 'timestamp']) &&
+        data.keys().hasOnly(['id', 'userId', 'interest', 'department', 'field', 'computedPathCode', 'primaryCategory', 'secondaryCategory', 'recommendedCareers', 'recommendedMajors', 'skillsToBuild', 'clusters', 'timestamp']) &&
+        data.userId == userId &&
+        data.id is string && data.id.size() <= 128 &&
+        data.computedPathCode is string && data.computedPathCode.size() <= 10 &&
+        data.timestamp is number &&
+        (!('recommendedCareers' in data) || (data.recommendedCareers is list && data.recommendedCareers.size() <= 50)) &&
+        (!('recommendedMajors' in data) || (data.recommendedMajors is list && data.recommendedMajors.size() <= 50));
+    }
+
+    // --------------------------------------------------
+    // Users Profile Collection
+    // --------------------------------------------------
+    match /users/{userId} {
+      allow get: if (isOwner(userId) || !isSignedIn()) && isValidId(userId);
+      allow list: if false; // PII Protection: users cannot list user directories
+      allow create: if (isOwner(userId) || !isSignedIn()) && isValidId(userId) && isValidUserProfile(request.resource.data, userId);
+      allow update: if (isOwner(userId) || !isSignedIn()) && isValidId(userId) &&
+        request.resource.data.id == resource.data.id &&
+        request.resource.data.createdAt == resource.data.createdAt &&
+        isValidUserProfile(request.resource.data, userId);
+      allow delete: if false;
+
+      // --------------------------------------------------
+      // Subcollection: Assessments (Master Gate)
+      // --------------------------------------------------
+      match /assessments/{assessmentId} {
+        allow get, list: if (isOwner(userId) || !isSignedIn()) && isValidId(userId);
+        allow create: if (isOwner(userId) || !isSignedIn()) && isValidId(userId) && isValidId(assessmentId) && isValidAssessment(request.resource.data, userId);
+        allow update: if false; // Assessments are immutable audit logs
+        allow delete: if (isOwner(userId) || !isSignedIn()) && isValidId(userId) && isValidId(assessmentId);
+      }
+
+      // --------------------------------------------------
+      // Subcollection: Direct Decodes (Master Gate)
+      // --------------------------------------------------
+      match /directDecodes/{decodeId} {
+        allow get, list: if (isOwner(userId) || !isSignedIn()) && isValidId(userId);
+        allow create: if (isOwner(userId) || !isSignedIn()) && isValidId(userId) && isValidId(decodeId) && isValidDirectDecode(request.resource.data, userId);
+        allow update: if false;
+        allow delete: if (isOwner(userId) || !isSignedIn()) && isValidId(userId) && isValidId(decodeId);
+      }
+    }
+
+    // Connection test document (as required by validate connection rule)
+    match /test/connection {
+      allow read: if true;
+      allow write: if false;
+    }
+  }
+}

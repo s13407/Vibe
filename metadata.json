@@ -1,0 +1,8 @@
+{
+  "name": "Remix PathCode - Career Guidance for Gen-Z",
+  "description": "Decode your interest. Discover your direction. 60-question CALIPS career assessment, interest-to-major decoding, and university program explorer for students.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

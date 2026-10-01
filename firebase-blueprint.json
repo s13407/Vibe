@@ -1,0 +1,186 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Student profile containing personal details, academic institution, department, and saved careers and universities",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Firebase Authentication User UID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the student"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Authenticated email address"
+        },
+        "age": {
+          "type": "number",
+          "description": "Age of the student"
+        },
+        "school": {
+          "type": "string",
+          "description": "School, college, or current educational institution"
+        },
+        "department": {
+          "type": "string",
+          "description": "Academic department or discipline"
+        },
+        "preferredCountry": {
+          "type": "string",
+          "description": "Preferred study or career destination country"
+        },
+        "preferredCity": {
+          "type": "string",
+          "description": "Preferred study or career destination city"
+        },
+        "savedCareers": {
+          "type": "array",
+          "description": "List of bookmarked career titles"
+        },
+        "savedUniversities": {
+          "type": "array",
+          "description": "List of bookmarked university program IDs"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Account registration timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last profile update timestamp"
+        }
+      },
+      "required": ["id", "name", "email", "createdAt"]
+    },
+    "Assessment": {
+      "title": "Assessment",
+      "description": "CALIPS assessment results, dimensional scores, and calculated 3-letter PathCode",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique assessment record ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner student UID"
+        },
+        "userName": {
+          "type": "string",
+          "description": "Student name at time of assessment"
+        },
+        "pathCode": {
+          "type": "string",
+          "description": "3-letter PathCode triad, e.g. IPS"
+        },
+        "primaryArchetype": {
+          "type": "string",
+          "description": "Primary archetype title"
+        },
+        "rankedCategories": {
+          "type": "array",
+          "description": "Array of the ranked dimension codes"
+        },
+        "scores": {
+          "type": "object",
+          "description": "Calculated raw score per dimension"
+        },
+        "preferredCountry": {
+          "type": "string",
+          "description": "Target country recorded with assessment"
+        },
+        "preferredCity": {
+          "type": "string",
+          "description": "Target city recorded with assessment"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO timestamp of completion"
+        }
+      },
+      "required": ["id", "userId", "pathCode", "createdAt"]
+    },
+    "DirectDecodeMatch": {
+      "title": "DirectDecodeMatch",
+      "description": "Fast-track interest matching to degree majors and career clusters",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique decode entry ID"
+        },
+        "userId": {
+          "type": "string",
+          "description": "Owner student UID"
+        },
+        "interest": {
+          "type": "string",
+          "description": "Primary topic of interest"
+        },
+        "department": {
+          "type": "string",
+          "description": "Selected department"
+        },
+        "field": {
+          "type": "string",
+          "description": "Specific focus field"
+        },
+        "computedPathCode": {
+          "type": "string",
+          "description": "Derived PathCode triad"
+        },
+        "primaryCategory": {
+          "type": "string",
+          "description": "Primary archetype code"
+        },
+        "secondaryCategory": {
+          "type": "string",
+          "description": "Secondary archetype code"
+        },
+        "recommendedCareers": {
+          "type": "array",
+          "description": "Recommended career pathways"
+        },
+        "recommendedMajors": {
+          "type": "array",
+          "description": "Recommended undergraduate majors"
+        },
+        "skillsToBuild": {
+          "type": "array",
+          "description": "Essential skills suggested for this path"
+        },
+        "clusters": {
+          "type": "array",
+          "description": "Associated industry career clusters"
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Unix timestamp in milliseconds"
+        }
+      },
+      "required": ["id", "userId", "computedPathCode", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile with email, personal details, academic institution, and saved careers and universities"
+    },
+    "/users/{userId}/assessments/{assessmentId}": {
+      "schema": "Assessment",
+      "description": "CALIPS assessment results, PathCode, and scores for this student"
+    },
+    "/users/{userId}/directDecodes/{decodeId}": {
+      "schema": "DirectDecodeMatch",
+      "description": "Direct interest match history for this student"
+    }
+  }
+}
